@@ -1,0 +1,36 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo-section">
+      <h1 class="brand-name">BeGreen <span>v2</span></h1>
+      <p class="tagline">Sustainable Future Management</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login-form">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" [(ngModel)]="loginData.email" required placeholder="your@email.com"
+          class="form-input">
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" [(ngModel)]="loginData.password" required
+          placeholder="••••••••" class="form-input">
+      </div>
+
+      @if (error()) {
+      <div class="error-msg">
+        {{ error() }}
+      </div>
+      }
+
+      <button type="submit" [disabled]="!loginForm.form.valid || loading()" class="btn-login">
+        @if (loading()) {
+        <span class="loader"></span>
+        } @else {
+        Login
+        }
+      </button>
+    </form>
+  </div>
+</div>

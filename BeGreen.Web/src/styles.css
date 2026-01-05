@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #006d4e;
+    /* Deep Forest Green */
+    --primary-light: #e6f3ef;
+    --secondary: #78988a;
+    /* Sage */
+    --accent: #d4e1db;
+    --text-main: #1a1c1b;
+    /* Deep Charcoal */
+    --text-light: #5c615e;
+    --bg-app: #ffffff;
+    /* Pure White Background */
+    --bg-surface: #f8faf9;
+    /* Subtle off-white for surfaces */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 109, 78, 0.1);
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
