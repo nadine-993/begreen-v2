@@ -18,8 +18,8 @@ export const routes: Routes = [
                     subtitle: 'Manage local cash disbursements',
                     collection: 'pettycashes',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'userName', label: 'Request' },
                         { key: 'department', label: 'Dept' },
                         { key: 'total', label: 'Amount', type: 'currency' },
                         { key: 'status', label: 'Status', type: 'status' }

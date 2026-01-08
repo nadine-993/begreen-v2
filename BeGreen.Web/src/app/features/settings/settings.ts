@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../core/services/settings.service';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
-    selector: 'app-settings',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-settings',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="settings-container">
       <header class="settings-header">
         <div class="header-content">
@@ -48,23 +48,31 @@ import { AuthService } from '../../core/services/auth.service';
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of data">
-                  <td *ngFor="let col of activeColumns">
-                    {{ item[col.key] }}
-                  </td>
-                  <td class="actions-cell">
-                    <ng-container *ngIf="!isSystemItem(item)">
-                      <button class="btn-icon edit" (click)="openModal(item)">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                      <button class="btn-icon delete" (click)="deleteItem(item)">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </ng-container>
-                    <span class="system-badge" *ngIf="isSystemItem(item)">System Role</span>
+                <tr *ngIf="isLoading">
+                  <td [attr.colspan]="activeColumns.length + 1" class="loading-state">
+                    <div class="loading-spinner"></div>
+                    Loading data...
                   </td>
                 </tr>
-                <tr *ngIf="data.length === 0">
+                <ng-container *ngIf="!isLoading">
+                  <tr *ngFor="let item of data; trackBy: trackByItem">
+                    <td *ngFor="let col of activeColumns">
+                      {{ item[col.key] }}
+                    </td>
+                    <td class="actions-cell">
+                      <ng-container *ngIf="!isSystemItem(item)">
+                        <button class="btn-icon edit" (click)="openModal(item)">
+                          <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button class="btn-icon delete" (click)="deleteItem(item)">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </ng-container>
+                      <span class="system-badge" *ngIf="isSystemItem(item)">System Role</span>
+                    </td>
+                  </tr>
+                </ng-container>
+                <tr *ngIf="!isLoading && data.length === 0">
                   <td [attr.colspan]="activeColumns.length + 1" class="empty-state">
                     No records found
                   </td>
@@ -102,6 +110,42 @@ import { AuthService } from '../../core/services/auth.service';
                 <option *ngFor="let div of divisions" [value]="div.name">{{ div.name }}</option>
               </select>
             </div>
+
+            <!-- Department Approvers -->
+            <ng-container *ngIf="activeTab === 'departments'">
+              <div class="form-group">
+                <label>Approver One</label>
+                <select [(ngModel)]="formData.approverOne" name="approverOne">
+                  <option [value]="null">None</option>
+                  <option *ngFor="let user of users" [value]="user.name">{{ user.name }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Approver Two</label>
+                <select [(ngModel)]="formData.approverTwo" name="approverTwo">
+                  <option [value]="null">None</option>
+                  <option *ngFor="let user of users" [value]="user.name">{{ user.name }}</option>
+                </select>
+              </div>
+            </ng-container>
+
+            <!-- Division Approvers -->
+            <ng-container *ngIf="activeTab === 'divisions'">
+              <div class="form-group">
+                <label>Head of Division Approver One</label>
+                <select [(ngModel)]="formData.headOfDivisionApproverOne" name="hodApproverOne">
+                  <option [value]="null">None</option>
+                  <option *ngFor="let user of users" [value]="user.name">{{ user.name }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Head of Division Approver Two</label>
+                <select [(ngModel)]="formData.headOfDivisionApproverTwo" name="hodApproverTwo">
+                  <option [value]="null">None</option>
+                  <option *ngFor="let user of users" [value]="user.name">{{ user.name }}</option>
+                </select>
+              </div>
+            </ng-container>
 
             <!-- User specific fields -->
             <ng-container *ngIf="activeTab === 'users'">
@@ -152,7 +196,7 @@ import { AuthService } from '../../core/services/auth.service';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .settings-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
     .settings-header { margin-bottom: 2rem; }
     .settings-header h1 { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 0; }
@@ -239,142 +283,175 @@ import { AuthService } from '../../core/services/auth.service';
     .form-group input:focus { outline: none; border-color: var(--primary); background: #ffffff; }
 
     .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+    .loading-state { text-align: center; padding: 3rem !important; color: var(--text-light); }
+    .loading-spinner {
+      width: 24px; height: 24px; border: 3px solid var(--accent);
+      border-top-color: var(--primary); border-radius: 50%;
+      margin: 0 auto 1rem; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class SettingsComponent implements OnInit {
-    tabs = [
-        { id: 'divisions', label: 'Divisions', icon: 'domain', singular: 'Division' },
-        { id: 'departments', label: 'Departments', icon: 'business_center', singular: 'Department' },
-        { id: 'roles', label: 'Roles', icon: 'badge', singular: 'Role' },
-        { id: 'users', label: 'Users', icon: 'group', singular: 'User' }
-    ];
-    activeTab = 'divisions';
-    data: any[] = [];
+  tabs = [
+    { id: 'divisions', label: 'Divisions', icon: 'domain', singular: 'Division' },
+    { id: 'departments', label: 'Departments', icon: 'business_center', singular: 'Department' },
+    { id: 'roles', label: 'Roles', icon: 'badge', singular: 'Role' },
+    { id: 'users', label: 'Users', icon: 'group', singular: 'User' }
+  ];
+  activeTab = 'divisions';
+  data: any[] = [];
+  isLoading = false;
 
-    // Lists for dropdowns
-    divisions: any[] = [];
-    departments: any[] = [];
-    roles: any[] = [];
+  // Lists for dropdowns
+  divisions: any[] = [];
+  departments: any[] = [];
+  roles: any[] = [];
+  users: any[] = [];
 
-    showModal = false;
-    editingItem: any = null;
-    formData: any = {};
+  showModal = false;
+  editingItem: any = null;
+  formData: any = {};
 
-    columns: { [key: string]: any[] } = {
-        divisions: [{ key: 'name', label: 'Name' }],
-        departments: [
-            { key: 'name', label: 'Department Name' },
-            { key: 'division', label: 'Division' }
-        ],
-        roles: [{ key: 'name', label: 'Role Name' }],
-        users: [
-            { key: 'name', label: 'Full Name' },
-            { key: 'email', label: 'Email' },
-            { key: 'role', label: 'Role' },
-            { key: 'department', label: 'Dept' }
-        ]
+  columns: { [key: string]: any[] } = {
+    divisions: [
+      { key: 'name', label: 'Name' },
+      { key: 'headOfDivisionApproverOne', label: 'HOD Approver 1' },
+      { key: 'headOfDivisionApproverTwo', label: 'HOD Approver 2' }
+    ],
+    departments: [
+      { key: 'name', label: 'Department Name' },
+      { key: 'division', label: 'Division' },
+      { key: 'approverOne', label: 'Approver 1' },
+      { key: 'approverTwo', label: 'Approver 2' }
+    ],
+    roles: [{ key: 'name', label: 'Role Name' }],
+    users: [
+      { key: 'name', label: 'Full Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'role', label: 'Role' },
+      { key: 'department', label: 'Dept' }
+    ]
+  };
+
+  constructor(private settingsService: SettingsService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef) { }
+
+  ngOnInit() {
+    this.preloadDropdowns();
+    this.loadData();
+  }
+
+  get activeTabLabel() { return this.tabs.find(t => t.id === this.activeTab)?.label; }
+  get activeTabLabelSingular() { return this.tabs.find(t => t.id === this.activeTab)?.singular; }
+  get activeColumns() { return this.columns[this.activeTab]; }
+
+  preloadDropdowns() {
+    this.settingsService.getDivisions().subscribe(res => this.divisions = res);
+    this.settingsService.getDepartments().subscribe(res => this.departments = res);
+    this.settingsService.getRoles().subscribe(res => this.roles = res);
+    this.settingsService.getUsers().subscribe(res => this.users = res);
+  }
+
+  loadData() {
+    this.isLoading = true;
+    this.data = [];
+    const onDone = (res: any[]) => {
+      this.data = res;
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    };
+    const onError = (err: any) => {
+      console.error('Error loading data', err);
+      this.isLoading = false;
     };
 
-    constructor(private settingsService: SettingsService, private authService: AuthService) { }
+    switch (this.activeTab) {
+      case 'divisions': this.settingsService.getDivisions().subscribe({ next: onDone, error: onError }); break;
+      case 'departments': this.settingsService.getDepartments().subscribe({ next: onDone, error: onError }); break;
+      case 'roles': this.settingsService.getRoles().subscribe({ next: onDone, error: onError }); break;
+      case 'users': this.settingsService.getUsers().subscribe({ next: onDone, error: onError }); break;
+    }
+  }
 
-    ngOnInit() {
+  openModal(item: any = null) {
+    this.editingItem = item;
+    if (item) {
+      this.formData = { ...item };
+    } else {
+      this.formData = { name: '', email: '', login: '', role: 'User', division: '', department: '' };
+    }
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.editingItem = null;
+    this.formData = {};
+  }
+
+  saveItem() {
+    const obs = this.editingItem
+      ? this.updateAction(this.editingItem.id, this.formData)
+      : this.createAction(this.formData);
+
+    obs.subscribe(() => {
+      this.loadData();
+      if (['divisions', 'departments', 'roles'].includes(this.activeTab)) {
         this.preloadDropdowns();
-        this.loadData();
+      }
+      this.closeModal();
+    });
+  }
+
+  private createAction(data: any) {
+    switch (this.activeTab) {
+      case 'divisions': return this.settingsService.createDivision(data);
+      case 'departments': return this.settingsService.createDepartment(data);
+      case 'roles': return this.settingsService.createRole(data);
+      case 'users': return this.settingsService.createUser(data);
+      default: throw new Error('Invalid tab');
+    }
+  }
+
+  private updateAction(id: string, data: any) {
+    switch (this.activeTab) {
+      case 'divisions': return this.settingsService.updateDivision(id, data);
+      case 'departments': return this.settingsService.updateDepartment(id, data);
+      case 'roles': return this.settingsService.updateRole(id, data);
+      case 'users': return this.settingsService.updateUser(id, data);
+      default: throw new Error('Invalid tab');
+    }
+  }
+
+  deleteItem(item: any) {
+    if (this.isSystemItem(item)) return;
+    if (!confirm(`Are you sure you want to delete this ${this.activeTabLabelSingular}?`)) return;
+
+    let obs;
+    switch (this.activeTab) {
+      case 'divisions': obs = this.settingsService.deleteDivision(item.id); break;
+      case 'departments': obs = this.settingsService.deleteDepartment(item.id); break;
+      case 'roles': obs = this.settingsService.deleteRole(item.id); break;
+      case 'users': obs = this.settingsService.deleteUser(item.id); break;
+      default: throw new Error('Invalid tab');
     }
 
-    get activeTabLabel() { return this.tabs.find(t => t.id === this.activeTab)?.label; }
-    get activeTabLabelSingular() { return this.tabs.find(t => t.id === this.activeTab)?.singular; }
-    get activeColumns() { return this.columns[this.activeTab]; }
+    obs.subscribe(() => this.loadData());
+  }
 
-    preloadDropdowns() {
-        this.settingsService.getDivisions().subscribe(res => this.divisions = res);
-        this.settingsService.getDepartments().subscribe(res => this.departments = res);
-        this.settingsService.getRoles().subscribe(res => this.roles = res);
-    }
+  isSystemItem(item: any) {
+    if (this.activeTab === 'roles' && item.name?.toLowerCase() === 'admin') return true;
+    if (this.activeTab === 'users' && item.role?.toLowerCase() === 'admin') return true;
+    return false;
+  }
 
-    loadData() {
-        this.data = [];
-        switch (this.activeTab) {
-            case 'divisions': this.settingsService.getDivisions().subscribe(res => this.data = res); break;
-            case 'departments': this.settingsService.getDepartments().subscribe(res => this.data = res); break;
-            case 'roles': this.settingsService.getRoles().subscribe(res => this.data = res); break;
-            case 'users': this.settingsService.getUsers().subscribe(res => this.data = res); break;
-        }
-    }
+  isAdmin() {
+    return this.authService.currentUser()?.role.toLowerCase() === 'admin';
+  }
 
-    openModal(item: any = null) {
-        this.editingItem = item;
-        if (item) {
-            this.formData = { ...item };
-        } else {
-            this.formData = { name: '', email: '', login: '', role: 'User', division: '', department: '' };
-        }
-        this.showModal = true;
-    }
-
-    closeModal() {
-        this.showModal = false;
-        this.editingItem = null;
-        this.formData = {};
-    }
-
-    saveItem() {
-        const obs = this.editingItem
-            ? this.updateAction(this.editingItem.id, this.formData)
-            : this.createAction(this.formData);
-
-        obs.subscribe(() => {
-            this.loadData();
-            if (['divisions', 'departments', 'roles'].includes(this.activeTab)) {
-                this.preloadDropdowns();
-            }
-            this.closeModal();
-        });
-    }
-
-    private createAction(data: any) {
-        switch (this.activeTab) {
-            case 'divisions': return this.settingsService.createDivision(data);
-            case 'departments': return this.settingsService.createDepartment(data);
-            case 'roles': return this.settingsService.createRole(data);
-            case 'users': return this.settingsService.createUser(data);
-            default: throw new Error('Invalid tab');
-        }
-    }
-
-    private updateAction(id: string, data: any) {
-        switch (this.activeTab) {
-            case 'divisions': return this.settingsService.updateDivision(id, data);
-            case 'departments': return this.settingsService.updateDepartment(id, data);
-            case 'roles': return this.settingsService.updateRole(id, data);
-            case 'users': return this.settingsService.updateUser(id, data);
-            default: throw new Error('Invalid tab');
-        }
-    }
-
-    deleteItem(item: any) {
-        if (this.isSystemItem(item)) return;
-        if (!confirm(`Are you sure you want to delete this ${this.activeTabLabelSingular}?`)) return;
-
-        let obs;
-        switch (this.activeTab) {
-            case 'divisions': obs = this.settingsService.deleteDivision(item.id); break;
-            case 'departments': obs = this.settingsService.deleteDepartment(item.id); break;
-            case 'roles': obs = this.settingsService.deleteRole(item.id); break;
-            case 'users': obs = this.settingsService.deleteUser(item.id); break;
-            default: throw new Error('Invalid tab');
-        }
-
-        obs.subscribe(() => this.loadData());
-    }
-
-    isSystemItem(item: any) {
-        if (this.activeTab === 'roles' && item.name?.toLowerCase() === 'admin') return true;
-        if (this.activeTab === 'users' && item.role?.toLowerCase() === 'admin') return true;
-        return false;
-    }
-
-    isAdmin() {
-        return this.authService.currentUser()?.role.toLowerCase() === 'admin';
-    }
+  trackByItem(index: number, item: any) {
+    return item.id || index;
+  }
 }

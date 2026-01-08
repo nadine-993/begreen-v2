@@ -6,7 +6,7 @@ using MongoDB.Driver;
 
 namespace BeGreen.Api.Controllers
 {
-    [Authorize(Policy = "ITOnly")]
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class SettingsController : ControllerBase
@@ -25,6 +25,7 @@ namespace BeGreen.Api.Controllers
             return await _context.Divisions.Find(_ => true).ToListAsync();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPost("divisions")]
         public async Task<ActionResult<Division>> CreateDivision(Division division)
         {
@@ -32,6 +33,7 @@ namespace BeGreen.Api.Controllers
             return Ok(division);
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPut("divisions/{id}")]
         public async Task<IActionResult> UpdateDivision(string id, Division division)
         {
@@ -39,6 +41,7 @@ namespace BeGreen.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpDelete("divisions/{id}")]
         public async Task<IActionResult> DeleteDivision(string id)
         {
@@ -53,6 +56,7 @@ namespace BeGreen.Api.Controllers
             return await _context.Departments.Find(_ => true).ToListAsync();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPost("departments")]
         public async Task<ActionResult<Department>> CreateDepartment(Department department)
         {
@@ -60,6 +64,7 @@ namespace BeGreen.Api.Controllers
             return Ok(department);
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPut("departments/{id}")]
         public async Task<IActionResult> UpdateDepartment(string id, Department department)
         {
@@ -67,6 +72,7 @@ namespace BeGreen.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpDelete("departments/{id}")]
         public async Task<IActionResult> DeleteDepartment(string id)
         {
@@ -81,6 +87,7 @@ namespace BeGreen.Api.Controllers
             return await _context.Roles.Find(_ => true).ToListAsync();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPost("roles")]
         public async Task<ActionResult<Role>> CreateRole(Role role)
         {
@@ -88,6 +95,7 @@ namespace BeGreen.Api.Controllers
             return Ok(role);
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPut("roles/{id}")]
         public async Task<IActionResult> UpdateRole(string id, Role role)
         {
@@ -100,6 +108,7 @@ namespace BeGreen.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpDelete("roles/{id}")]
         public async Task<IActionResult> DeleteRole(string id)
         {
@@ -119,6 +128,7 @@ namespace BeGreen.Api.Controllers
             return await _context.Users.Find(_ => true).ToListAsync();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPost("users")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
@@ -139,6 +149,7 @@ namespace BeGreen.Api.Controllers
             return Ok(user);
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpPut("users/{id}")]
         public async Task<IActionResult> UpdateUser(string id, User user)
         {
@@ -173,6 +184,7 @@ namespace BeGreen.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "ITOnly")]
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {

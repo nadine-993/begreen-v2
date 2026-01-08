@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -17,7 +17,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </div>
       
       <nav class="sidebar-nav">
-        <a *ngFor="let item of navItems" 
+        <a *ngFor="let item of navItems(); trackBy: trackByFn" 
            [routerLink]="item.route" 
            routerLinkActive="active" 
            class="nav-link"
@@ -83,9 +83,7 @@ export class SidebarComponent {
   @Input() isCollapsed = false;
   @Output() toggleCollapse = new EventEmitter<void>();
 
-  constructor(private authService: AuthService) { }
-
-  get navItems() {
+  navItems = computed(() => {
     const items = [
       { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
       { label: 'Petty Cash', icon: 'payments', route: '/petty-cash' },
@@ -106,6 +104,12 @@ export class SidebarComponent {
       }
       return true;
     });
+  });
+
+  constructor(private authService: AuthService) { }
+
+  trackByFn(index: number, item: any) {
+    return item.route;
   }
 
   onToggleCollapse() {

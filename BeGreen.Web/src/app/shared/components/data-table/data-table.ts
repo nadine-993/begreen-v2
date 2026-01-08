@@ -1,17 +1,17 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface TableColumn {
-    key: string;
-    label: string;
-    type?: 'text' | 'date' | 'currency' | 'status';
+  key: string;
+  label: string;
+  type?: 'text' | 'date' | 'currency' | 'status';
 }
 
 @Component({
-    selector: 'app-data-table',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-data-table',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="table-container">
       <table class="eco-table">
         <thead>
@@ -25,7 +25,7 @@ export interface TableColumn {
             <td *ngFor="let col of columns">
               <ng-container [ngSwitch]="col.type">
                 <span *ngSwitchCase="'status'" [class]="'status-badge ' + getStatusClass(row[col.key])">
-                  {{ row[col.key] }}
+                  {{ formatStatus(row[col.key]) }}
                 </span>
                 <span *ngSwitchCase="'date'">
                   {{ row[col.key] | date:'mediumDate' }}
@@ -37,7 +37,7 @@ export interface TableColumn {
               </ng-container>
             </td>
             <td class="actions-col">
-              <button class="action-btn" title="View Details">
+              <button class="action-btn" title="View Details" (click)="view.emit(row)">
                 <span class="material-symbols-outlined">visibility</span>
               </button>
             </td>
@@ -51,7 +51,7 @@ export interface TableColumn {
       </table>
     </div>
   `,
-    styles: [`
+  styles: [`
     .table-container {
       background: white;
       border-radius: 24px;
@@ -107,15 +107,25 @@ export interface TableColumn {
   `]
 })
 export class DataTableComponent {
-    @Input() columns: TableColumn[] = [];
-    @Input() data: any[] = [];
+  @Input() columns: TableColumn[] = [];
+  @Input() data: any[] = [];
+  @Output() view = new EventEmitter<any>();
 
-    getStatusClass(status: string): string {
-        if (!status) return 'status-default';
-        const s = status.toLowerCase();
-        if (s === 'open' || s === 'pending') return 'status-open';
-        if (s === 'approved' || s === 'done' || s === 'paid') return 'status-approved';
-        if (s === 'rejected' || s === 'cancelled') return 'status-rejected';
-        return 'status-default';
-    }
+  getStatusClass(status: string): string {
+    if (!status) return 'status-default';
+    const s = status.toLowerCase();
+    if (s === 'open' || s === 'pending') return 'status-open';
+    if (s === 'approved' || s === 'done' || s === 'paid') return 'status-approved';
+    if (s === 'rejected' || s === 'cancelled') return 'status-rejected';
+    return 'status-default';
+  }
+
+  formatStatus(status: string): string {
+    if (!status) return 'Unknown';
+    const s = status.toLowerCase();
+    if (s === 'pending') return 'Pending Approval';
+    if (s === 'paid') return 'Paid';
+    // Capitalize default
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  }
 }

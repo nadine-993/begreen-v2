@@ -22,6 +22,7 @@ namespace BeGreen.Api.Data
         }
 
         public IMongoCollection<User> Users => _database.GetCollection<User>("users");
+        public IMongoCollection<GlCode> GlCodes => _database.GetCollection<GlCode>("glcodes");
         public IMongoCollection<PettyCash> PettyCashRequests => _database.GetCollection<PettyCash>("pettycashes");
         public IMongoCollection<CashAdvance> CashAdvances => _database.GetCollection<CashAdvance>("cashadvances");
         public IMongoCollection<EngineeringOrder> EngineeringOrders => _database.GetCollection<EngineeringOrder>("engineeringorders");

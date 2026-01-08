@@ -46,10 +46,44 @@ namespace BeGreen.Api.Controllers
                 
                 var collection = _context.GetCollection<BsonDocument>(mongoCollectionName);
                 
-                // Simplified sorting to avoid driver translation issues
-                var sort = Builders<BsonDocument>.Sort.Descending("requestDate");
+                // --- Role-based Filtering ---
+                FilterDefinition<BsonDocument> filter = Builders<BsonDocument>.Filter.Empty;
+
+                if (mongoCollectionName == "pettycashes")
+                {
+                    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                    var userDept = User.FindFirst("department")?.Value;
+                    var userDiv = User.FindFirst("division")?.Value;
+
+                    if (userRole == "Admin" || userRole == "General Cashier")
+                    {
+                        filter = Builders<BsonDocument>.Filter.Empty;
+                    }
+                    else if (userRole == "Head of Division")
+                    {
+                        filter = Builders<BsonDocument>.Filter.Eq("division", userDiv);
+                    }
+                    else if (userRole == "Head of Department" || userRole == "Supervisor")
+                    {
+                        filter = Builders<BsonDocument>.Filter.And(
+                            Builders<BsonDocument>.Filter.Eq("department", userDept),
+                            Builders<BsonDocument>.Filter.Eq("division", userDiv)
+                        );
+                    }
+                    else // standard user
+                    {
+                        filter = Builders<BsonDocument>.Filter.Eq("userId", userId);
+                    }
+                }
+
+                // Try to sort by createdAt (new model) or requestDate (old model)
+                var sort = Builders<BsonDocument>.Sort.Descending("createdAt");
+                if (mongoCollectionName != "pettycashes") {
+                    sort = Builders<BsonDocument>.Sort.Descending("requestDate");
+                }
                 
-                var documents = await collection.Find(_ => true)
+                var documents = await collection.Find(filter)
                     .Sort(sort)
                     .Limit(100)
                     .ToListAsync();

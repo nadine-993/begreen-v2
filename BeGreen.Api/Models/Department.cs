@@ -18,5 +18,11 @@ namespace BeGreen.Api.Models
 
         [BsonElement("department")]
         public string Name { get; set; } = null!;
+
+        [BsonElement("approverOne")]
+        public string? ApproverOne { get; set; }
+
+        [BsonElement("approverTwo")]
+        public string? ApproverTwo { get; set; }
     }
 }
