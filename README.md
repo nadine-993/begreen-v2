@@ -44,7 +44,7 @@ dotnet run
 The API will be available at `http://localhost:5030` (or similar, check console output).
 Swagger documentation: `http://localhost:5030/swagger`
 
-### 3. Frontend Setup (Web)
+### 4. Frontend Setup (Web)
 
 ```bash
 cd BeGreen.Web
