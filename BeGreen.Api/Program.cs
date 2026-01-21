@@ -4,6 +4,7 @@ using BeGreen.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using BeGreen.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ builder.Services.AddSingleton<MongoDbContext>();
 // Configure JWT Authentication
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.ASCII.GetBytes(jwtSettingsSection["Secret"]!);
@@ -76,7 +78,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -97,6 +99,7 @@ app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<LicenseMiddleware>();
 
 app.MapControllers();
 

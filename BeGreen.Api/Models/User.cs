@@ -46,10 +46,19 @@ namespace BeGreen.Api.Models
         [BsonElement("image")]
         public string? Image { get; set; }
 
+        [BsonElement("isDisabled")]
+        public bool IsDisabled { get; set; } = false;
+
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("updatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [BsonElement("resetToken")]
+        public string? ResetToken { get; set; }
+
+        [BsonElement("resetTokenExpiry")]
+        public DateTime? ResetTokenExpiry { get; set; }
     }
 }

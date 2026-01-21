@@ -10,35 +10,44 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("reqAccount")]
-        public string ReqAccount { get; set; } = null!;
-
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
         [BsonElement("department")]
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
+
+        [BsonElement("division")]
+        public string? Division { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; }
 
-        [BsonElement("totalAmount")]
-        public decimal TotalAmount { get; set; }
+        [BsonElement("amount")]
+        public decimal Amount { get; set; }
 
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("currency")]
+        public string Currency { get; set; } = "SYP";
 
         [BsonElement("status")]
-        public string Status { get; set; } = "Requested";
+        public string Status { get; set; } = "PENDING"; // PENDING, APPROVED, PAID, REJECTED
 
-        [BsonElement("approver")]
-        public string? Approver { get; set; }
+        [BsonElement("currentApproverUserId")]
+        public string? CurrentApproverUserId { get; set; }
+
+        [BsonElement("currentApproverName")]
+        public string? CurrentApproverName { get; set; }
 
         [BsonElement("approveOrder")]
-        public int ApproveOrder { get; set; }
+        public int ApproveOrder { get; set; } = 1;
+
+        [BsonElement("attachment")]
+        public string? Attachment { get; set; } // Base64 string
+
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("history")]
         public List<HistoryRecord> History { get; set; } = new();

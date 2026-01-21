@@ -3,10 +3,31 @@
     </app-sidebar>
 
     <main class="main-container">
+        <!-- License Expiry Banner -->
+        <div class="license-banner warning" *ngIf="licenseStatus?.isNearExpiry && licenseStatus?.daysRemaining! > 0">
+            <span class="material-symbols-outlined">warning</span>
+            <p>Your system license expires in <strong>{{ licenseStatus?.daysRemaining }}</strong> days. Please contact
+                IT for a renewal key.</p>
+        </div>
+
         <app-header></app-header>
 
         <div class="page-content">
             <router-outlet></router-outlet>
+        </div>
+
+        <!-- License Lock Screen -->
+        <div class="license-lock-overlay" *ngIf="!isLicenseLoading && licenseStatus?.isLicensed === false">
+            <div class="lock-modal">
+                <span class="material-symbols-outlined lock-icon">lock</span>
+                <h2>License Expired</h2>
+                <p>The BeGreen system license has expired. Access to all features has been suspended.</p>
+                <p>Please log in as an <strong>Administrative User</strong> and navigate to <strong>Settings >
+                        License</strong> to activate a new key.</p>
+                <div class="lock-actions">
+                    <button class="btn-primary" routerLink="/settings">Update License (Admin Only)</button>
+                </div>
+            </div>
         </div>
     </main>
 </div>

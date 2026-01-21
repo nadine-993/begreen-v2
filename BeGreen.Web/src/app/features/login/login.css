@@ -61,6 +61,15 @@
   margin-left: 4px;
 }
 
+.powered-by {
+  font-size: 0.9rem;
+  color: var(--primary);
+  font-weight: 700;
+  margin: -10px 0 20px 0;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
 .tagline {
   color: var(--text-light);
   font-size: 0.95rem;

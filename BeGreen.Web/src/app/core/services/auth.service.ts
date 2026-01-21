@@ -35,4 +35,12 @@ export class AuthService {
         this.currentUser.set(null);
         this.router.navigateByUrl('/login');
     }
+
+    verifyResetToken(token: string) {
+        return this.http.get<{ name: string }>(`${this.apiUrl}/verify-reset-token?token=${token}`);
+    }
+
+    completeReset(resetDto: any) {
+        return this.http.post(`${this.apiUrl}/complete-reset`, resetDto);
+    }
 }

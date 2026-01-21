@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BeGreen.Api.Data;
 using BeGreen.Api.Models;
+using BeGreen.Api.Services;
 using MongoDB.Driver;
 
 namespace BeGreen.Api.Controllers
@@ -12,10 +13,14 @@ namespace BeGreen.Api.Controllers
     public class SettingsController : ControllerBase
     {
         private readonly MongoDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _config;
 
-        public SettingsController(MongoDbContext context)
+        public SettingsController(MongoDbContext context, IEmailService emailService, IConfiguration config)
         {
             _context = context;
+            _emailService = emailService;
+            _config = config;
         }
 
         // --- Divisions ---
@@ -198,6 +203,68 @@ namespace BeGreen.Api.Controllers
 
             await _context.Users.DeleteOneAsync(u => u.Id == id);
             return NoContent();
+        }
+
+        [Authorize(Policy = "ITOnly")]
+        [HttpPut("users/{id}/toggle-status")]
+        public async Task<IActionResult> ToggleUserStatus(string id)
+        {
+            var user = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+            if (user == null) return NotFound();
+
+            if (user.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Admin users cannot be disabled.");
+            }
+
+            user.IsDisabled = !user.IsDisabled;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.Users.ReplaceOneAsync(u => u.Id == id, user);
+            return Ok(new { id = user.Id, isDisabled = user.IsDisabled });
+        }
+
+        [Authorize(Policy = "ITOnly")]
+        [HttpPost("users/{id}/reset-password")]
+        public async Task<IActionResult> ResetPassword(string id)
+        {
+            var user = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+            if (user == null) return NotFound();
+
+            // Generate a secure random token
+            var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+            user.ResetToken = token;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.Users.ReplaceOneAsync(u => u.Id == id, user);
+
+            // Construct reset link
+            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:4200";
+            var resetLink = $"{frontendUrl}/reset-password?token={token}";
+
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetLink);
+
+            return Ok(new { message = "Password reset email sent." });
+        }
+
+        [HttpPost("users/signatures")]
+        public async Task<ActionResult<IEnumerable<object>>> GetSignatures([FromBody] List<string> userIds)
+        {
+            if (userIds == null || !userIds.Any()) return Ok(new List<object>());
+
+            var filter = Builders<User>.Filter.In(u => u.Id, userIds);
+            var users = await _context.Users.Find(filter).ToListAsync();
+
+            var result = users.Select(u => new
+            {
+                u.Id,
+                u.Name,
+                u.Signature,
+                u.Role
+            });
+
+            return Ok(result);
         }
     }
 }

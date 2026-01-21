@@ -35,6 +35,7 @@ namespace BeGreen.Api.Data
         public IMongoCollection<Department> Departments => _database.GetCollection<Department>("departments");
         public IMongoCollection<Division> Divisions => _database.GetCollection<Division>("divisions");
         public IMongoCollection<Role> Roles => _database.GetCollection<Role>("roles");
+        public IMongoCollection<SystemLicense> Licenses => _database.GetCollection<SystemLicense>("licenses");
         public IMongoCollection<BsonDocument> OutgoingRecords => _database.GetCollection<BsonDocument>("outgoingrecords");
         
         // Helper to get any collection by name

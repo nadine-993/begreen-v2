@@ -10,47 +10,35 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("reqAccount")]
-        public string ReqAccount { get; set; } = null!;
-
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
         [BsonElement("department")]
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
+
+        [BsonElement("division")]
+        public string? Division { get; set; }
 
         [BsonElement("guestName")]
-        public string GuestName { get; set; } = null!;
+        public string? GuestName { get; set; }
 
         [BsonElement("roomNumber")]
-        public string RoomNumber { get; set; } = null!;
+        public string? RoomNumber { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; }
 
-        [BsonElement("compensation")]
-        public string? Compensation { get; set; }
-
-        [BsonElement("costEstimate")]
-        public decimal CostEstimate { get; set; }
-
-        [BsonElement("compensationStatus")]
-        public string? CompensationStatus { get; set; }
-
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("notes")]
+        public string? Notes { get; set; }
 
         [BsonElement("status")]
-        public string Status { get; set; } = "Requested";
+        public string Status { get; set; } = "Open";
 
-        [BsonElement("approver")]
-        public string? Approver { get; set; }
-
-        [BsonElement("approveOrder")]
-        public int ApproveOrder { get; set; }
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("history")]
         public List<HistoryRecord> History { get; set; } = new();

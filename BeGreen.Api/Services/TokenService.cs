@@ -30,6 +30,7 @@ namespace BeGreen.Api.Services
             {
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Name, user.Name),
+                new Claim(ClaimTypes.Name, user.Name),
                 new Claim(ClaimTypes.Role, user.Role),
                 new Claim("department", user.Department ?? ""),
                 new Claim("division", user.Division ?? ""),

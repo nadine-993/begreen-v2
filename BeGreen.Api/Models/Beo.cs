@@ -10,14 +10,14 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("dateFrom")]
         public DateTime? DateFrom { get; set; }
@@ -26,10 +26,13 @@ namespace BeGreen.Api.Models
         public DateTime? DateTo { get; set; }
 
         [BsonElement("notes")]
-        public string Notes { get; set; } = null!;
+        public string? Notes { get; set; }
 
-        [BsonElement("hasAttachment")]
-        public string HasAttachment { get; set; } = "NO";
+        [BsonElement("attachment")]
+        public string? Attachment { get; set; } // Base64 or URL
+
+        [BsonElement("status")]
+        public string Status { get; set; } = "Active";
 
         [BsonElement("history")]
         public List<HistoryRecord> History { get; set; } = new();

@@ -10,55 +10,43 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("reqAccount")]
-        public string ReqAccount { get; set; } = null!;
-
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
         [BsonElement("department")]
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
+
+        [BsonElement("division")]
+        public string? Division { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; }
 
-        [BsonElement("amount")]
-        public decimal Amount { get; set; }
+        [BsonElement("total")]
+        public decimal Total { get; set; }
 
         [BsonElement("currency")]
         public string Currency { get; set; } = "SYP";
 
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("status")]
+        public string Status { get; set; } = "PENDING";
 
-        [BsonElement("approver")]
-        public string? Approver { get; set; }
+        [BsonElement("currentApproverUserId")]
+        public string? CurrentApproverUserId { get; set; }
+
+        [BsonElement("currentApproverName")]
+        public string? CurrentApproverName { get; set; }
 
         [BsonElement("approveOrder")]
-        public int ApproveOrder { get; set; }
+        public int ApproveOrder { get; set; } = 1;
 
-        [BsonElement("status")]
-        public string Status { get; set; } = "Requested";
-
-        [BsonElement("notes")]
-        public List<CashAdvanceNote> Notes { get; set; } = new();
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("history")]
         public List<HistoryRecord> History { get; set; } = new();
-    }
-
-    public class CashAdvanceNote
-    {
-        [BsonElement("note")]
-        public string Note { get; set; } = null!;
-
-        [BsonElement("user")]
-        public string User { get; set; } = null!;
-
-        [BsonElement("date")]
-        public DateTime Date { get; set; } = DateTime.UtcNow;
     }
 }

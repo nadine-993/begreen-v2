@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using BeGreen.Api.Data;
 using BeGreen.Api.Models;
 using MongoDB.Driver;
+using System.Linq;
 using System.Security.Claims;
+using BeGreen.Api.Services;
 
 namespace BeGreen.Api.Controllers
 {
@@ -13,40 +15,51 @@ namespace BeGreen.Api.Controllers
     public class PettyCashController : ControllerBase
     {
         private readonly MongoDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public PettyCashController(MongoDbContext context)
+        public PettyCashController(MongoDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PettyCash>>> GetRequests()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            var userDept = User.FindFirst("department")?.Value;
-            var userDiv = User.FindFirst("division")?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("nameid")?.Value;
+            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value)
+                            .Concat(User.FindAll("role").Select(c => c.Value))
+                            .ToList();
+            
+            var userDept = (User.FindFirst("department")?.Value ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("department"))?.Value ?? "").Trim();
+            var userDiv = (User.FindFirst("division")?.Value ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("division"))?.Value ?? "").Trim();
 
             FilterDefinition<PettyCash> filter = Builders<PettyCash>.Filter.Empty;
+            var ownRequests = Builders<PettyCash>.Filter.Eq(r => r.UserId, userId);
 
-            if (userRole == "Admin" || userRole == "General Cashier")
+            if (roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)) || 
+                roles.Any(r => string.Equals(r, "General Cashier", StringComparison.OrdinalIgnoreCase)))
             {
                 filter = Builders<PettyCash>.Filter.Empty;
             }
-            else if (userRole == "Head of Division")
+            else if (roles.Any(r => string.Equals(r, "Head of Division", StringComparison.OrdinalIgnoreCase)))
             {
-                filter = Builders<PettyCash>.Filter.Eq(r => r.Division, userDiv);
+                // Case-insensitive match for Division using Regex, handling potential whitespace
+                var regexPattern = $"^\\s*{System.Text.RegularExpressions.Regex.Escape(userDiv)}\\s*$";
+                var divisionFilter = Builders<PettyCash>.Filter.Regex(r => r.Division, new MongoDB.Bson.BsonRegularExpression(regexPattern, "i"));
+                filter = Builders<PettyCash>.Filter.Or(ownRequests, divisionFilter);
             }
-            else if (userRole == "Head of Department" || userRole == "Supervisor")
+            else if (roles.Any(r => string.Equals(r, "Head of Department", StringComparison.OrdinalIgnoreCase)) || 
+                     roles.Any(r => string.Equals(r, "Supervisor", StringComparison.OrdinalIgnoreCase)))
             {
-                filter = Builders<PettyCash>.Filter.And(
-                    Builders<PettyCash>.Filter.Eq(r => r.Department, userDept),
-                    Builders<PettyCash>.Filter.Eq(r => r.Division, userDiv)
-                );
+                // Case-insensitive match for Department using Regex, handling potential whitespace
+                var regexPattern = $"^\\s*{System.Text.RegularExpressions.Regex.Escape(userDept)}\\s*$";
+                var deptFilter = Builders<PettyCash>.Filter.Regex(r => r.Department, new MongoDB.Bson.BsonRegularExpression(regexPattern, "i"));
+                filter = Builders<PettyCash>.Filter.Or(ownRequests, deptFilter);
             }
-            else // standard user
+            else
             {
-                filter = Builders<PettyCash>.Filter.Eq(r => r.UserId, userId);
+                filter = ownRequests;
             }
 
             var requests = await _context.PettyCashRequests.Find(filter).SortByDescending(r => r.CreatedAt).ToListAsync();
@@ -66,8 +79,8 @@ namespace BeGreen.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("nameid")?.Value;
+                var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst("unique_name")?.Value ?? User.FindFirst("name")?.Value;
                 
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
@@ -103,8 +116,6 @@ namespace BeGreen.Api.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PettyCashController] Error creating request: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
@@ -114,9 +125,16 @@ namespace BeGreen.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("nameid")?.Value;
+                var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst("unique_name")?.Value ?? User.FindFirst("name")?.Value;
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+                // Fallback for userName if claims are incomplete
+                if (string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(userId))
+                {
+                    var currentUser = await _context.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+                    userName = currentUser?.Name;
+                }
 
                 var request = await _context.PettyCashRequests.Find(r => r.Id == id).FirstOrDefaultAsync();
                 if (request == null) return NotFound();
@@ -141,11 +159,78 @@ namespace BeGreen.Api.Controllers
                 await SetNextApprover(request, requester);
 
                 await _context.PettyCashRequests.ReplaceOneAsync(r => r.Id == id, request);
+
+                // Send email if status is PAID
+                if (request.Status == "PAID")
+                {
+                    _ = Task.Run(async () => {
+                        var user = await _context.Users.Find(u => u.Id == request.UserId).FirstOrDefaultAsync();
+                        if (user != null && !string.IsNullOrEmpty(user.Email))
+                        {
+                            await _emailService.SendPaidNotificationAsync(user.Email, user.Name, "Petty Cash", request.Total, request.Currency);
+                        }
+                    });
+                }
+
                 return Ok(request);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PettyCashController] Error approving request: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> RejectRequest(string id, [FromBody] string? note)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("nameid")?.Value;
+                var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst("unique_name")?.Value ?? User.FindFirst("name")?.Value;
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+                // Fallback for userName if claims are incomplete
+                if (string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(userId))
+                {
+                    var currentUser = await _context.Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+                    userName = currentUser?.Name;
+                }
+
+                var request = await _context.PettyCashRequests.Find(r => r.Id == id).FirstOrDefaultAsync();
+                if (request == null) return NotFound();
+
+                if (request.Status != "PENDING" || request.CurrentApproverUserId != userId)
+                {
+                    return BadRequest("Not authorized to reject this request.");
+                }
+
+                request.Status = "REJECTED";
+                request.CurrentApproverUserId = null;
+                request.CurrentApproverName = null;
+
+                request.History.Add(new HistoryRecord {
+                    UserId = userId,
+                    UserName = userName,
+                    Action = "Rejected",
+                    Date = DateTime.UtcNow,
+                    Note = note ?? "Request rejected"
+                });
+
+                await _context.PettyCashRequests.ReplaceOneAsync(r => r.Id == id, request);
+
+                // Send email notification
+                _ = Task.Run(async () => {
+                    var user = await _context.Users.Find(u => u.Id == request.UserId).FirstOrDefaultAsync();
+                    if (user != null && !string.IsNullOrEmpty(user.Email))
+                    {
+                        await _emailService.SendRejectedNotificationAsync(user.Email, user.Name, "Petty Cash", userName ?? "Approver", note ?? "No reason provided");
+                    }
+                });
+
+                return Ok(request);
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

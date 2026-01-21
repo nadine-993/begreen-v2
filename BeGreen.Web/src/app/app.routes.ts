@@ -5,6 +5,7 @@ import { deptGuard } from './core/guards/dept.guard';
 
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
+    { path: 'reset-password', loadComponent: () => import('./features/reset-password/reset-password').then(m => m.ResetPasswordComponent) },
     {
         path: '',
         component: MainLayoutComponent,
@@ -34,10 +35,10 @@ export const routes: Routes = [
                     subtitle: 'Business travel and advance requests',
                     collection: 'cashadvances',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'userName', label: 'Requestor' },
                         { key: 'department', label: 'Dept' },
-                        { key: 'amount', label: 'Amount', type: 'currency' },
+                        { key: 'total', label: 'Amount', type: 'currency' },
                         { key: 'status', label: 'Status', type: 'status' }
                     ]
                 }
@@ -48,13 +49,13 @@ export const routes: Routes = [
                 data: {
                     title: 'Engineering Orders',
                     subtitle: 'Maintenance and facility work orders',
-                    collection: 'engineering',
+                    collection: 'engineeringorders',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'status', label: 'Status', type: 'status' },
+                        { key: 'userName', label: 'Requestor' },
                         { key: 'location', label: 'Location' },
-                        { key: 'team', label: 'Team' },
-                        { key: 'status', label: 'Status', type: 'status' }
+                        { key: 'team', label: 'Team' }
                     ]
                 }
             },
@@ -62,15 +63,14 @@ export const routes: Routes = [
                 path: 'it-orders',
                 loadComponent: () => import('./features/module-list/module-list').then(m => m.ModuleListComponent),
                 data: {
-                    title: 'IT Orders',
+                    title: 'IT Requests',
                     subtitle: 'Hardware, software and support requests',
                     collection: 'itorders',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
-                        { key: 'type', label: 'Request Type' },
-                        { key: 'systemName', label: 'System' },
-                        { key: 'status', label: 'Status', type: 'status' }
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'status', label: 'Status', type: 'status' },
+                        { key: 'userName', label: 'Requestor' },
+                        { key: 'systemName', label: 'System/Asset' }
                     ]
                 }
             },
@@ -78,29 +78,30 @@ export const routes: Routes = [
                 path: 'glitches',
                 loadComponent: () => import('./features/module-list/module-list').then(m => m.ModuleListComponent),
                 data: {
-                    title: 'Glitches',
+                    title: 'Guest Glitches',
                     subtitle: 'Guest service recovery tracking',
                     collection: 'glitches',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Staff' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'status', label: 'Status', type: 'status' },
                         { key: 'guestName', label: 'Guest' },
                         { key: 'roomNumber', label: 'Room' },
-                        { key: 'status', label: 'Status', type: 'status' }
+                        { key: 'userName', label: 'Reported By' }
                     ]
                 }
             },
             {
-                path: 'beo',
+                path: 'beos',
                 loadComponent: () => import('./features/module-list/module-list').then(m => m.ModuleListComponent),
                 data: {
-                    title: 'BEO',
-                    subtitle: 'Banquet Event Orders',
-                    collection: 'beo',
+                    title: 'BEO Orders',
+                    subtitle: 'Banquet Event Orders and setups',
+                    collection: 'beos',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
-                        { key: 'notes', label: 'Summary' }
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'userName', label: 'Created By' },
+                        { key: 'dateFrom', label: 'Starts', type: 'date' },
+                        { key: 'dateTo', label: 'Ends', type: 'date' }
                     ]
                 }
             },
@@ -109,13 +110,11 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/module-list/module-list').then(m => m.ModuleListComponent),
                 data: {
                     title: 'Taxi Orders',
-                    subtitle: 'Guest and staff transportation',
+                    subtitle: 'Staff transportation and airport transfers',
                     collection: 'taxiorders',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Staff' },
-                        { key: 'passengerName', label: 'Passenger' },
-                        { key: 'destination', label: 'To' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'userName', label: 'Created By' },
                         { key: 'status', label: 'Status', type: 'status' }
                     ]
                 }
@@ -128,9 +127,10 @@ export const routes: Routes = [
                     subtitle: 'Reimbursement and cost tracking',
                     collection: 'expenses',
                     columns: [
-                        { key: 'requestDate', label: 'Date', type: 'date' },
-                        { key: 'requestor', label: 'Requestor' },
-                        { key: 'totalAmount', label: 'Amount', type: 'currency' },
+                        { key: 'createdAt', label: 'Date', type: 'date' },
+                        { key: 'userName', label: 'Requestor' },
+                        { key: 'department', label: 'Dept' },
+                        { key: 'amount', label: 'Amount', type: 'currency' },
                         { key: 'status', label: 'Status', type: 'status' }
                     ]
                 }

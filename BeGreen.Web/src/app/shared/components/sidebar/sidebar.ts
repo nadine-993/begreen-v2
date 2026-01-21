@@ -12,7 +12,9 @@ import { AuthService } from '../../../core/services/auth.service';
       <div class="sidebar-header">
         <div class="logo">
           <span class="logo-icon">BG</span>
-          <span class="logo-text" *ngIf="!isCollapsed">BeGreen <span>v2</span></span>
+          <span class="logo-text" *ngIf="!isCollapsed">
+            BeGreen <span>v2</span>
+          </span>
         </div>
       </div>
       
@@ -56,7 +58,7 @@ import { AuthService } from '../../../core/services/auth.service';
       display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 1.2rem; flex-shrink: 0;
     }
-    .logo-text { color: var(--primary); font-weight: 800; font-size: 1.4rem; letter-spacing: -1px; }
+    .logo-text { color: var(--primary); font-weight: 800; font-size: 1.4rem; letter-spacing: -1px; display: flex; align-items: baseline; gap: 8px; }
     .logo-text span { color: var(--text-light); font-weight: 300; font-size: 1rem; }
     .sidebar-nav { flex: 1; padding: 0 16px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
     .nav-link {
@@ -91,7 +93,7 @@ export class SidebarComponent {
       { label: 'Engineering', icon: 'engineering', route: '/engineering' },
       { label: 'IT Orders', icon: 'devices', route: '/it-orders' },
       { label: 'Glitches', icon: 'report_problem', route: '/glitches' },
-      { label: 'BEO', icon: 'event_available', route: '/beo' },
+      { label: 'BEO Orders', icon: 'event_available', route: '/beos' },
       { label: 'Taxi Orders', icon: 'local_taxi', route: '/taxi-orders' },
       { label: 'Expenses', icon: 'receipt_long', route: '/expenses' },
       { label: 'Settings', icon: 'settings', route: '/settings' },

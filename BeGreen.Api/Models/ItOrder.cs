@@ -10,26 +10,26 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
         [BsonElement("department")]
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
 
-        [BsonElement("type")]
-        public string Type { get; set; } = null!;
+        [BsonElement("division")]
+        public string? Division { get; set; }
 
         [BsonElement("systemName")]
-        public string SystemName { get; set; } = null!;
+        public string? SystemName { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; }
 
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("status")]
         public string Status { get; set; } = "Open";

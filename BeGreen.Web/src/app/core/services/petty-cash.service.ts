@@ -26,4 +26,10 @@ export class PettyCashService {
             headers: { 'Content-Type': 'application/json' }
         });
     }
+
+    rejectRequest(id: string, note?: string): Observable<any> {
+        return this.http.put<any>(`${this.apiUrl}/${id}/reject`, note ? `"${note}"` : null, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
 }

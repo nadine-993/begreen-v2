@@ -10,40 +10,55 @@ namespace BeGreen.Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("sqlId")]
-        public int SqlId { get; set; }
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-        [BsonElement("reqAccount")]
-        public string ReqAccount { get; set; } = null!;
-
-        [BsonElement("requestor")]
-        public string Requestor { get; set; } = null!;
+        [BsonElement("userName")]
+        public string? UserName { get; set; }
 
         [BsonElement("department")]
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
 
-        [BsonElement("passengerName")]
-        public string PassengerName { get; set; } = null!;
+        [BsonElement("division")]
+        public string? Division { get; set; }
 
-        [BsonElement("destination")]
-        public string Destination { get; set; } = null!;
-
-        [BsonElement("pickupTime")]
-        public DateTime PickupTime { get; set; }
-
-        [BsonElement("requestDate")]
-        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("status")]
-        public string Status { get; set; } = "Requested";
+        public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
 
-        [BsonElement("approver")]
-        public string? Approver { get; set; }
+        [BsonElement("attachment")]
+        public string? Attachment { get; set; } // Base64 Excel
 
-        [BsonElement("approveOrder")]
-        public int ApproveOrder { get; set; }
+        [BsonElement("passengers")]
+        public List<Passenger> Passengers { get; set; } = new();
 
         [BsonElement("history")]
         public List<HistoryRecord> History { get; set; } = new();
+    }
+
+    public class Passenger
+    {
+        [BsonElement("fullName")]
+        public string FullName { get; set; } = "";
+
+        [BsonElement("department")]
+        public string Department { get; set; } = "";
+
+        [BsonElement("phoneNumber")]
+        public string PhoneNumber { get; set; } = "";
+
+        [BsonElement("pickUpFrom")]
+        public string PickUpFrom { get; set; } = "";
+
+        [BsonElement("destination")]
+        public string Destination { get; set; } = "";
+
+        [BsonElement("pickupTime")]
+        public string PickupTime { get; set; } = "";
+
+        [BsonElement("status")]
+        public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
     }
 }

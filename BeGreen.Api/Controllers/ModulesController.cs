@@ -42,33 +42,41 @@ namespace BeGreen.Api.Controllers
             {
                 // Normalize collection name
                 string mongoCollectionName = NormalizeCollectionName(collectionName);
-                Console.WriteLine($"[ModulesController] Fetching data for: {mongoCollectionName}");
                 
                 var collection = _context.GetCollection<BsonDocument>(mongoCollectionName);
                 
                 // --- Role-based Filtering ---
                 FilterDefinition<BsonDocument> filter = Builders<BsonDocument>.Filter.Empty;
 
-                if (mongoCollectionName == "pettycashes")
+                if (mongoCollectionName == "pettycashes" || mongoCollectionName == "cashadvances" || mongoCollectionName == "engineeringorders" || mongoCollectionName == "itorders" || mongoCollectionName == "glitches" || mongoCollectionName == "beos" || mongoCollectionName == "taxiorders")
                 {
-                    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-                    var userDept = User.FindFirst("department")?.Value;
-                    var userDiv = User.FindFirst("division")?.Value;
+                    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("nameid")?.Value;
+                    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+                    var userDept = (User.FindFirst("department")?.Value ?? "").Trim();
+                    var userDiv = (User.FindFirst("division")?.Value ?? "").Trim();
 
-                    if (userRole == "Admin" || userRole == "General Cashier")
+                    // Visibility Rules
+                    if (userRole == "Admin" || userRole == "General Cashier" || 
+                        mongoCollectionName == "glitches" ||
+                        mongoCollectionName == "beos" ||
+                        (mongoCollectionName == "taxiorders" && string.Equals(userDept, "Security", StringComparison.OrdinalIgnoreCase)) ||
+                        (mongoCollectionName == "engineeringorders" && string.Equals(userDept, "Engineering", StringComparison.OrdinalIgnoreCase)) ||
+                        (mongoCollectionName == "itorders" && string.Equals(userDept, "Information Technology", StringComparison.OrdinalIgnoreCase)))
                     {
                         filter = Builders<BsonDocument>.Filter.Empty;
                     }
                     else if (userRole == "Head of Division")
                     {
-                        filter = Builders<BsonDocument>.Filter.Eq("division", userDiv);
+                        filter = Builders<BsonDocument>.Filter.Or(
+                            Builders<BsonDocument>.Filter.Eq("userId", userId),
+                            Builders<BsonDocument>.Filter.Eq("division", userDiv)
+                        );
                     }
                     else if (userRole == "Head of Department" || userRole == "Supervisor")
                     {
-                        filter = Builders<BsonDocument>.Filter.And(
-                            Builders<BsonDocument>.Filter.Eq("department", userDept),
-                            Builders<BsonDocument>.Filter.Eq("division", userDiv)
+                        filter = Builders<BsonDocument>.Filter.Or(
+                            Builders<BsonDocument>.Filter.Eq("userId", userId),
+                            Builders<BsonDocument>.Filter.Eq("department", userDept)
                         );
                     }
                     else // standard user
@@ -79,7 +87,7 @@ namespace BeGreen.Api.Controllers
 
                 // Try to sort by createdAt (new model) or requestDate (old model)
                 var sort = Builders<BsonDocument>.Sort.Descending("createdAt");
-                if (mongoCollectionName != "pettycashes") {
+                if (mongoCollectionName != "pettycashes" && mongoCollectionName != "cashadvances" && mongoCollectionName != "engineeringorders" && mongoCollectionName != "itorders" && mongoCollectionName != "glitches" && mongoCollectionName != "beos" && mongoCollectionName != "taxiorders") {
                     sort = Builders<BsonDocument>.Sort.Descending("requestDate");
                 }
                 
@@ -87,8 +95,6 @@ namespace BeGreen.Api.Controllers
                     .Sort(sort)
                     .Limit(100)
                     .ToListAsync();
-
-                Console.WriteLine($"[ModulesController] Found {documents.Count} documents in {mongoCollectionName}");
 
                 // Convert BsonDocument to a friendly dictionary for JSON serialization
                 var results = documents.Select(doc => {
@@ -100,7 +106,7 @@ namespace BeGreen.Api.Controllers
                     
                     if (doc.Contains("_id"))
                     {
-                        dict["id"] = doc["_id"].ToString();
+                        dict["id"] = doc["_id"].ToString() ?? "";
                     }
                     
                     return dict;
@@ -132,7 +138,6 @@ namespace BeGreen.Api.Controllers
                 _ => clean
             };
 
-            Console.WriteLine($"[ModulesController] Normalized '{name}' to '{normalized}'");
             return normalized;
         }
     }

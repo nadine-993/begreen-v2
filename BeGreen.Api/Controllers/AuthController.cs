@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BeGreen.Api.Data;
 using BeGreen.Api.DTOs;
@@ -28,6 +29,7 @@ namespace BeGreen.Api.Controllers
                 var user = await _context.Users.Find(u => u.Email.ToLower() == loginDto.Email.ToLower()).FirstOrDefaultAsync();
 
                 if (user == null) return Unauthorized("Invalid email");
+                if (user.IsDisabled) return Unauthorized("This user is disabled, please contact your IT administrator");
                 if (string.IsNullOrEmpty(user.Password)) return Unauthorized("User has no password set");
 
                 bool isPasswordValid = false;
@@ -57,5 +59,36 @@ namespace BeGreen.Api.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [AllowAnonymous]
+        [HttpGet("verify-reset-token")]
+        public async Task<IActionResult> VerifyResetToken([FromQuery] string token)
+        {
+            var user = await _context.Users.Find(u => u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow).FirstOrDefaultAsync();
+            if (user == null) return BadRequest("Invalid or expired reset token.");
+            return Ok(new { name = user.Name });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("complete-reset")]
+        public async Task<IActionResult> CompleteReset([FromBody] ResetPasswordDto resetDto)
+        {
+            var user = await _context.Users.Find(u => u.ResetToken == resetDto.Token && u.ResetTokenExpiry > DateTime.UtcNow).FirstOrDefaultAsync();
+            if (user == null) return BadRequest("Invalid or expired reset token.");
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(resetDto.NewPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.Users.ReplaceOneAsync(u => u.Id == user.Id, user);
+            return Ok(new { message = "Password has been reset successfully." });
+        }
+    }
+
+    public class ResetPasswordDto
+    {
+        public string Token { get; set; } = null!;
+        public string NewPassword { get; set; } = null!;
     }
 }

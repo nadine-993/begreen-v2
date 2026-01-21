@@ -1,12 +1,14 @@
 import { Component, EventEmitter, Input, Output, inject, ChangeDetectorRef, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { PettyCashService } from '../../core/services/petty-cash.service';
+import { PdfService } from '../../core/services/pdf.service';
 
 @Component({
   selector: 'app-petty-cash-detail-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DatePipe, DecimalPipe, FormsModule],
   template: `
     <div class="modal-backdrop" (click)="close.emit()">
       <div class="modal-content" (click)="$event.stopPropagation()">
@@ -21,11 +23,10 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
         </header>
 
         <div class="modal-body scroll-area">
-          <!-- Request Header Info -->
           <div class="info-grid">
             <div class="info-item">
               <span class="label">Status</span>
-              <span class="value badge" [class.badge-primary]="request.status === 'PENDING'" [class.badge-success]="request.status === 'PAID'">
+              <span class="value badge" [attr.data-status]="request.status">
                 {{ request.status }}
               </span>
             </div>
@@ -43,7 +44,6 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
             </div>
           </div>
 
-          <!-- Items Table -->
           <div class="section">
             <h3>Disbursement Items</h3>
             <div class="details-table-wrapper">
@@ -70,7 +70,6 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
             </div>
           </div>
 
-          <!-- History Timeline -->
           <div class="section" *ngIf="request.history?.length">
             <h3>Approval History</h3>
             <div class="timeline">
@@ -90,14 +89,22 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
         </div>
 
         <footer class="modal-footer">
+          <div class="footer-input" *ngIf="canApprove">
+              <textarea [(ngModel)]="approvalNote" placeholder="Add an optional note..."></textarea>
+          </div>
           <div class="footer-actions">
             <button class="btn-secondary" (click)="close.emit()">Close</button>
+            <ng-container *ngIf="canApprove">
+                <button class="btn-danger" (click)="reject()" [disabled]="isSubmitting">Reject</button>
+                <button class="btn-primary" (click)="approve()" [disabled]="isSubmitting">Approve</button>
+            </ng-container>
             <button 
-              *ngIf="canApprove" 
-              class="btn-primary" 
-              (click)="approve()" 
-              [disabled]="isApproving">
-              {{ isApproving ? 'Approving...' : 'Approve Request' }}
+              *ngIf="request.status === 'PAID'" 
+              class="btn-download" 
+              (click)="downloadPdf()"
+              [disabled]="isDownloading">
+              <span class="material-symbols-outlined">{{ isDownloading ? 'sync' : 'picture_as_pdf' }}</span>
+              {{ isDownloading ? 'Preparing...' : 'Download PDF' }}
             </button>
           </div>
         </footer>
@@ -105,40 +112,24 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
     </div>
   `,
   styles: [`
-    .modal-backdrop {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center; z-index: 1000;
-    }
-    .modal-content {
-      background: #ffffff; border-radius: 32px; width: 90%; max-width: 900px;
-      max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: 0 50px 100px -20px rgba(0,0,0,0.25);
-    }
-    .modal-header {
-      padding: 32px; border-bottom: 1px solid var(--accent);
-      display: flex; justify-content: space-between; align-items: center;
-    }
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #ffffff; border-radius: 32px; width: 90%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 50px 100px -20px rgba(0,0,0,0.25); }
+    .modal-header { padding: 32px; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
     .header-text h2 { margin: 0; color: var(--primary); font-size: 1.75rem; font-weight: 800; }
     .header-text p { margin: 4px 0 0 0; color: var(--text-light); }
     .btn-close { background: var(--bg-surface); border: none; padding: 8px; border-radius: 12px; cursor: pointer; color: var(--text-light); transition: all 0.2s; }
-    .btn-close:hover { background: #fee2e2; color: #ef4444; }
-
-    .scroll-area { overflow-y: auto; padding: 32px; flex: 1; }
     
-    .info-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 24px; padding: 24px; background: var(--bg-surface); border-radius: 24px;
-      margin-bottom: 32px; border: 1px solid var(--accent);
-    }
+    .scroll-area { overflow-y: auto; padding: 32px; flex: 1; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 24px; padding: 24px; background: var(--bg-surface); border-radius: 24px; margin-bottom: 32px; border: 1px solid var(--accent); }
     .info-item { display: flex; flex-direction: column; gap: 4px; }
-    .info-item .label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-item .label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
     .info-item .value { font-weight: 600; color: var(--text-dark); }
     .info-item .value.highlight { color: var(--primary); font-size: 1.25rem; font-weight: 800; }
 
-    .badge { padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 700; }
-    .badge-primary { background: #e0f2fe; color: #0369a1; }
-    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge { padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .badge[data-status="PENDING"] { background: #e0f2fe; color: #0369a1; }
+    .badge[data-status="PAID"] { background: #dcfce7; color: #15803d; }
+    .badge[data-status="REJECTED"] { background: #fee2e2; color: #991b1b; }
 
     .section { margin-bottom: 40px; }
     .section h3 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: 20px; font-weight: 700; border-left: 4px solid var(--primary); padding-left: 12px; }
@@ -152,31 +143,23 @@ import { PettyCashService } from '../../core/services/petty-cash.service';
 
     .timeline { display: flex; flex-direction: column; gap: 0; padding-left: 12px; }
     .timeline-item { display: flex; gap: 24px; position: relative; padding-bottom: 24px; }
-    .timeline-item:last-child { padding-bottom: 0; }
-    .timeline-item::before {
-      content: ''; position: absolute; left: 6px; top: 0; bottom: 0;
-      width: 2px; background: var(--accent);
-    }
+    .timeline-item::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--accent); }
     .timeline-item:last-child::before { display: none; }
-    
-    .timeline-marker {
-      width: 14px; height: 14px; border-radius: 50%; background: white;
-      border: 3px solid var(--primary); z-index: 1; margin-top: 4px;
-    }
-    .timeline-content { flex: 1; }
+    .timeline-marker { width: 14px; height: 14px; border-radius: 50%; background: white; border: 3px solid var(--primary); z-index: 1; margin-top: 4px; }
     .timeline-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
     .action-tag { background: var(--bg-surface); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; color: var(--text-light); }
-    .timeline-note { margin: 4px 0 0 0; color: #64748b; font-size: 0.9rem; font-style: italic; }
+    .timeline-note { margin: 8px 0 0 0; background: #f8fafc; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; color: #475569; border-left: 3px solid #e2e8f0; }
 
-    .modal-footer {
-      padding: 24px 32px; border-top: 1px solid var(--accent);
-      background: var(--bg-surface);
-    }
-    .footer-actions { display: flex; justify-content: flex-end; gap: 16px; width: 100%; }
-    .btn-secondary { background: #ffffff; color: var(--text-dark); border: 1px solid var(--accent); padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-secondary:hover { background: #f8fafc; }
-    .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 109, 78, 0.2); }
-    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    .modal-footer { padding: 32px; border-top: 1px solid var(--accent); background: var(--bg-surface); }
+    .footer-input { margin-bottom: 20px; }
+    .footer-input textarea { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--accent); font-family: inherit; font-size: 0.9rem; resize: none; min-height: 60px; }
+    
+    .footer-actions { display: flex; justify-content: flex-end; gap: 16px; }
+    .btn-secondary { background: #ffffff; color: var(--text-dark); border: 1px solid var(--accent); padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .btn-danger { background: #ef4444; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .btn-download { background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .btn-download:disabled { opacity: 0.7; }
   `]
 })
 export class PettyCashDetailModalComponent implements OnInit {
@@ -187,14 +170,15 @@ export class PettyCashDetailModalComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
   private pettyCashService = inject(PettyCashService);
+  private pdfService = inject(PdfService);
 
-  isApproving = false;
+  isSubmitting = false;
+  isDownloading = false;
+  approvalNote = '';
 
   get canApprove(): boolean {
     const user = this.authService.currentUser();
-    return !!user &&
-      this.request?.status === 'PENDING' &&
-      this.request?.currentApproverUserId === user.id;
+    return !!user && this.request?.status === 'PENDING' && this.request?.currentApproverUserId === user.id;
   }
 
   ngOnInit() {
@@ -202,19 +186,56 @@ export class PettyCashDetailModalComponent implements OnInit {
   }
 
   approve() {
-    if (this.isApproving) return;
-    this.isApproving = true;
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
 
-    this.pettyCashService.approveRequest(this.request.id, 'Approved via UI').subscribe({
-      next: () => {
-        this.isApproving = false;
+    this.pettyCashService.approveRequest(this.request.id, this.approvalNote || undefined).subscribe({
+      next: (res) => {
+        this.isSubmitting = false;
+        this.request = res;
         this.success.emit();
-        this.close.emit();
+        this.approvalNote = '';
       },
       error: (err) => {
         console.error('Error approving request', err);
-        this.isApproving = false;
-        alert('Failed to approve request. Please try again.');
+        this.isSubmitting = false;
+        alert('Failed to approve request.');
+      }
+    });
+  }
+
+  reject() {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+
+    this.pettyCashService.rejectRequest(this.request.id, this.approvalNote || undefined).subscribe({
+      next: (res) => {
+        this.isSubmitting = false;
+        this.request = res;
+        this.success.emit();
+        this.approvalNote = '';
+      },
+      error: (err) => {
+        console.error('Error rejecting request', err);
+        this.isSubmitting = false;
+        alert('Failed to reject request.');
+      }
+    });
+  }
+
+  downloadPdf() {
+    if (this.isDownloading) return;
+    this.isDownloading = true;
+
+    this.pdfService.downloadPettyCashPdf(this.request).subscribe({
+      next: () => {
+        this.isDownloading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error downloading PDF', err);
+        this.isDownloading = false;
+        this.cdr.detectChanges();
       }
     });
   }

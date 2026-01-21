@@ -65,4 +65,16 @@ export class SettingsService {
     deleteUser(id: string): Observable<any> {
         return this.http.delete<any>(`${this.apiUrl}/users/${id}`);
     }
+
+    toggleUserStatus(userId: string): Observable<any> {
+        return this.http.put<any>(`${this.apiUrl}/users/${userId}/toggle-status`, {});
+    }
+
+    resetUserPassword(userId: string): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/users/${userId}/reset-password`, {});
+    }
+
+    getSignatures(userIds: string[]): Observable<any[]> {
+        return this.http.post<any[]>(`${this.apiUrl}/users/signatures`, userIds);
+    }
 }
