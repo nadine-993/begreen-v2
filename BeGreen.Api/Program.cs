@@ -101,6 +101,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<LicenseMiddleware>();
 
-app.MapControllers();
+// Seed the database
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
+    await DatabaseSeeder.SeedAsync(context);
+}
 
 app.Run();
