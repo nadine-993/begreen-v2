@@ -43,4 +43,8 @@ export class AuthService {
     completeReset(resetDto: any) {
         return this.http.post(`${this.apiUrl}/complete-reset`, resetDto);
     }
+
+    completeRegistration(registrationDto: any) {
+        return this.http.post(`${this.apiUrl}/complete-registration`, registrationDto);
+    }
 }

@@ -142,5 +142,35 @@ namespace BeGreen.Api.Services
 
             await SendEmailAsync(to, subject, body);
         }
+
+        public async Task SendInvitationEmailAsync(string to, string name, string link, string loginId)
+        {
+            var subject = "Welcome to BeGreen: Complete Your Registration";
+            var body = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                    <h2 style='color: #006d4e;'>Welcome to BeGreen!</h2>
+                    <p>Hello <strong>{name}</strong>,</p>
+                    <p>You have been invited to join the BeGreen platform. Below are your account details and a link to set your password.</p>
+                    <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;'>
+                        <p style='margin: 0;'><strong>Login ID:</strong> {loginId}</p>
+                    </div>
+                    <p>Please click the button below to set your password and gain access.</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{link}' 
+                           style='background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;'>
+                            Set Your Password
+                        </a>
+                    </div>
+                    <p>This link will expire in 24 hours.</p>
+                    <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;' />
+                    <br />
+                    <p>Best regards,<br /><strong>BeGreen Team</strong></p>
+                    <div style='font-size: 0.8rem; color: #777; margin-top: 30px;'>
+                        This is an automated message. Powered by Avera.
+                    </div>
+                </div>";
+
+            await SendEmailAsync(to, subject, body);
+        }
     }
 }

@@ -146,11 +146,28 @@ namespace BeGreen.Api.Controllers
                 }
             }
 
-            if (!string.IsNullOrEmpty(user.Password))
-            {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-            }
+            // Check if Login ID is already taken
+            var existing = await _context.Users.Find(u => u.Login.ToLower() == user.Login.ToLower()).FirstOrDefaultAsync();
+            if (existing != null) return BadRequest("This Login ID is already taken. Please choose another one.");
+
+            // Registration setup
+            user.Password = null; // IT cannot set password for new users
+            user.IsRegistrationComplete = false;
+            
+            var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+            user.ResetToken = token;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddHours(24);
+            user.CreatedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+
             await _context.Users.InsertOneAsync(user);
+
+            // Construct invitation link
+            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:4200";
+            var invitationLink = $"{frontendUrl}/complete-registration?token={token}";
+
+            await _emailService.SendInvitationEmailAsync(user.Email, user.Name, invitationLink, user.Login);
+
             return Ok(user);
         }
 

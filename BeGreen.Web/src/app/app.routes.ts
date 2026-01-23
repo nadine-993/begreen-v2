@@ -6,6 +6,7 @@ import { deptGuard } from './core/guards/dept.guard';
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
     { path: 'reset-password', loadComponent: () => import('./features/reset-password/reset-password').then(m => m.ResetPasswordComponent) },
+    { path: 'complete-registration', loadComponent: () => import('./features/registration/registration').then(m => m.RegistrationComponent) },
     {
         path: '',
         component: MainLayoutComponent,

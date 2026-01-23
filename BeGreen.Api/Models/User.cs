@@ -60,5 +60,8 @@ namespace BeGreen.Api.Models
 
         [BsonElement("resetTokenExpiry")]
         public DateTime? ResetTokenExpiry { get; set; }
+
+        [BsonElement("isRegistrationComplete")]
+        public bool IsRegistrationComplete { get; set; } = false;
     }
 }

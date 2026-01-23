@@ -108,4 +108,6 @@ using (var scope = app.Services.CreateScope())
     await DatabaseSeeder.SeedAsync(context);
 }
 
+app.MapControllers();
+
 app.Run();

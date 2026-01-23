@@ -26,10 +26,18 @@ namespace BeGreen.Api.Controllers
         {
             try
             {
-                var user = await _context.Users.Find(u => u.Email.ToLower() == loginDto.Email.ToLower()).FirstOrDefaultAsync();
+                // Search by Login ID (username) OR Email (backward compatibility)
+                var user = await _context.Users.Find(u => 
+                    u.Login.ToLower() == loginDto.Email.ToLower() || 
+                    u.Email.ToLower() == loginDto.Email.ToLower()).FirstOrDefaultAsync();
 
-                if (user == null) return Unauthorized("Invalid email");
+                if (user == null) return Unauthorized("Invalid username or email");
                 if (user.IsDisabled) return Unauthorized("This user is disabled, please contact your IT administrator");
+                
+                // Allow login if registration is complete OR if they are a legacy user (already have a password set)
+                bool isLegacyUser = !string.IsNullOrEmpty(user.Password) && !user.IsRegistrationComplete;
+                if (!user.IsRegistrationComplete && !isLegacyUser) return Unauthorized("Registration not complete. Please check your email for the invitation link.");
+                
                 if (string.IsNullOrEmpty(user.Password)) return Unauthorized("User has no password set");
 
                 bool isPasswordValid = false;
@@ -84,6 +92,36 @@ namespace BeGreen.Api.Controllers
             await _context.Users.ReplaceOneAsync(u => u.Id == user.Id, user);
             return Ok(new { message = "Password has been reset successfully." });
         }
+
+        [AllowAnonymous]
+        [HttpPost("complete-registration")]
+        public async Task<IActionResult> CompleteRegistration([FromBody] CompleteRegistrationDto registrationDto)
+        {
+            var user = await _context.Users.Find(u => u.ResetToken == registrationDto.Token && u.ResetTokenExpiry > DateTime.UtcNow).FirstOrDefaultAsync();
+            if (user == null) return BadRequest("Invalid or expired registration token.");
+
+            // Verify that the provided Login ID matches the record (requirement: user must use this LogID)
+            if (user.Login.ToLower() != registrationDto.Login.ToLower())
+            {
+                return BadRequest("The Login ID provided does not match our records. Please use the Login ID sent to your email.");
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(registrationDto.Password);
+            user.IsRegistrationComplete = true;
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.Users.ReplaceOneAsync(u => u.Id == user.Id, user);
+            return Ok(new { message = "Registration completed successfully. You can now log in." });
+        }
+    }
+
+    public class CompleteRegistrationDto
+    {
+        public string Token { get; set; } = null!;
+        public string Login { get; set; } = null!;
+        public string Password { get; set; } = null!;
     }
 
     public class ResetPasswordDto

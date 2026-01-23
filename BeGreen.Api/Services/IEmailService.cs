@@ -7,5 +7,6 @@ namespace BeGreen.Api.Services
         Task SendClosedNotificationAsync(string to, string requesterName, string requestType, string note);
         Task SendRejectedNotificationAsync(string to, string requesterName, string requestType, string rejectedBy, string reason);
         Task SendPasswordResetEmailAsync(string to, string userName, string resetLink);
+        Task SendInvitationEmailAsync(string to, string name, string link, string loginId);
     }
 }

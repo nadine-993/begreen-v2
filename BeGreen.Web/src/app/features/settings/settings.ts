@@ -286,7 +286,13 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
               </div>
               <div class="form-group">
                 <label>Password {{ editingItem ? '(Leave blank to keep current)' : '' }}</label>
-                <input type="password" [(ngModel)]="formData.password" name="password" [required]="!editingItem">
+                <input 
+                  type="password" 
+                  [(ngModel)]="formData.password" 
+                  name="password" 
+                  [required]="!editingItem"
+                  [disabled]="!editingItem"
+                  [placeholder]="!editingItem ? 'Set by user' : '••••••••'">
               </div>
               <div class="form-group">
                 <label>Role</label>
