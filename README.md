@@ -54,6 +54,16 @@ npm start
 
 The web application will be available at `http://localhost:4200`.
 
+## License Generation (Admin Only)
+
+To generate a new annual license key for a client:
+
+```bash
+dotnet run --project LicenseGenerator.csproj
+```
+
+Follow the prompts to enter the **Client Name** and **Expiry Date (YYYYMMDD)**.
+
 ## Features
 
 - **Dynamic Dashboard**: Real-time status tracking.

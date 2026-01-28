@@ -34,6 +34,7 @@ export class MainLayoutComponent implements OnInit {
             },
             error: (err) => {
                 console.error('License check failed', err);
+                this.licenseStatus = { isLicensed: false, daysRemaining: 0, isNearExpiry: false };
                 this.isLicenseLoading = false;
                 this.cdr.detectChanges();
             }

@@ -64,6 +64,22 @@ namespace BeGreen.Api.Data
                 };
                 await context.Users.InsertOneAsync(admin);
             }
+
+            // Seed Initial License (1 Year)
+            var licenseCount = await context.Licenses.CountDocumentsAsync(_ => true);
+            if (licenseCount == 0)
+            {
+                var license = new SystemLicense
+                {
+                    LicenseKey = "BEGREEN-20270128-8C92BFBC0FDFD588",
+                    ExpiryDate = new DateTime(2027, 01, 28, 23, 59, 59, DateTimeKind.Utc),
+                    IssuedTo = "BEGREEN",
+                    IsActive = true,
+                    ActivatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await context.Licenses.InsertOneAsync(license);
+            }
         }
     }
 }

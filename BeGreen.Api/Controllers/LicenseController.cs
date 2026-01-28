@@ -13,10 +13,14 @@ namespace BeGreen.Api.Controllers
     public class LicenseController : ControllerBase
     {
         private readonly MongoDbContext _context;
+        private readonly IConfiguration _config;
+        private readonly string _secretKey;
 
-        public LicenseController(MongoDbContext context)
+        public LicenseController(MongoDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
+            _secretKey = _config["LicenseSettings:SecretKey"] ?? "STAY-GREEN-DEFAULT-SECRET";
         }
 
         [HttpGet("status")]
@@ -63,6 +67,15 @@ namespace BeGreen.Api.Controllers
                 return BadRequest("This license key has already expired.");
             }
 
+            // Cryptographic Verification
+            var payload = $"{parts[0]}-{parts[1]}";
+            var expectedSignature = GenerateSignature(payload, _secretKey);
+
+            if (parts[2] != expectedSignature)
+            {
+                return BadRequest("Invalid license signature. The key may have been tampered with.");
+            }
+
             // Deactivate old licenses
             await _context.Licenses.UpdateManyAsync(l => l.IsActive, Builders<SystemLicense>.Update.Set(l => l.IsActive, false));
 
@@ -78,6 +91,15 @@ namespace BeGreen.Api.Controllers
             await _context.Licenses.InsertOneAsync(newLicense);
 
             return Ok(new { message = "License activated successfully.", expiryDate = newLicense.ExpiryDate });
+        }
+
+        private string GenerateSignature(string payload, string key)
+        {
+            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
+            {
+                var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+                return BitConverter.ToString(hash).Replace("-", "").ToUpper().Substring(0, 16); // Shortened for readability
+            }
         }
     }
 }

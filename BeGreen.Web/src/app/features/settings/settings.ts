@@ -118,38 +118,40 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
                       </ng-container>
                     </td>
                     <td class="actions-cell">
-                      <div class="menu-container" *ngIf="!isSystemItem(item)">
-                        <button class="btn-icon-menu" (click)="toggleMenu($event, item.id)" title="Actions">
-                          <span class="material-symbols-outlined">more_vert</span>
-                        </button>
-                        
-                        <div class="dropdown-menu" *ngIf="activeMenuId === item.id">
-                          <button class="menu-item" (click)="openModal(item)">
-                            <span class="material-symbols-outlined">edit</span>
-                            Edit
+                      <div class="actions-wrapper">
+                        <div class="menu-container" *ngIf="!isSystemItem(item)">
+                          <button class="btn-icon-menu" (click)="toggleMenu($event, item.id)" title="Actions">
+                            <span class="material-symbols-outlined">more_vert</span>
                           </button>
                           
-                          <button class="menu-item" *ngIf="activeTab === 'users'" (click)="resetPassword(item)">
-                            <span class="material-symbols-outlined">lock_reset</span>
-                            Reset Password
-                          </button>
-                          
-                          <button class="menu-item" *ngIf="activeTab === 'users'" (click)="toggleStatus(item)">
-                            <span class="material-symbols-outlined">
-                              {{ item.isDisabled ? 'person_check' : 'person_off' }}
-                            </span>
-                            {{ item.isDisabled ? 'Enable' : 'Disable' }}
-                          </button>
-                          
-                          <div class="menu-divider"></div>
-                          
-                          <button class="menu-item delete" (click)="deleteItem(item)">
-                            <span class="material-symbols-outlined">delete</span>
-                            Delete
-                          </button>
+                          <div class="dropdown-menu" *ngIf="activeMenuId === item.id">
+                            <button class="menu-item" (click)="openModal(item)">
+                              <span class="material-symbols-outlined">edit</span>
+                              Edit
+                            </button>
+                            
+                            <button class="menu-item" *ngIf="activeTab === 'users'" (click)="resetPassword(item)">
+                              <span class="material-symbols-outlined">lock_reset</span>
+                              Reset Password
+                            </button>
+                            
+                            <button class="menu-item" *ngIf="activeTab === 'users'" (click)="toggleStatus(item)">
+                              <span class="material-symbols-outlined">
+                                {{ item.isDisabled ? 'person_check' : 'person_off' }}
+                              </span>
+                              {{ item.isDisabled ? 'Enable' : 'Disable' }}
+                            </button>
+                            
+                            <div class="menu-divider"></div>
+                            
+                            <button class="menu-item delete" (click)="deleteItem(item)">
+                              <span class="material-symbols-outlined">delete</span>
+                              Delete
+                            </button>
+                          </div>
                         </div>
+                        <span class="system-badge" *ngIf="isSystemItem(item)">System Role</span>
                       </div>
-                      <span class="system-badge" *ngIf="isSystemItem(item)">System Role</span>
                     </td>
                   </tr>
                 </ng-container>
@@ -389,8 +391,12 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
     .data-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--accent); color: var(--text-dark); }
     .empty-state { text-align: center; padding: 3rem !important; color: var(--text-light); }
 
-    .actions-col { width: 120px; text-align: right; }
-    .actions-cell { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .actions-col { width: 140px; text-align: right; }
+    .actions-cell { width: 140px; padding: 0.5rem 1.5rem !important; }
+    .actions-wrapper { 
+      display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; 
+      white-space: nowrap; height: 40px;
+    }
     
     /* License Management Styles */
     .license-management { max-width: 600px; }
@@ -430,6 +436,7 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
       font-size: 0.75rem; font-weight: 700; color: var(--text-light);
       background: var(--bg-surface); padding: 4px 12px; border-radius: 20px;
       border: 1px solid var(--accent); text-transform: uppercase; letter-spacing: 0.5px;
+      white-space: nowrap;
     }
 
     /* Modal Styles */
@@ -509,8 +516,8 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
 
     /* New Styles for Header Filtering & Pagination */
     th { padding: 12px 16px !important; }
-    .header-cell { display: flex; flex-direction: column; gap: 6px; }
-    .header-label { font-size: 0.7rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+    .header-cell { display: flex; flex-direction: column; gap: 6px; white-space: nowrap; }
+    .header-label { font-size: 0.7rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
     .filter-input { 
       width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--accent); 
       background: white; font-size: 0.75rem; color: var(--text-dark); 
@@ -566,7 +573,7 @@ import { LicenseService, LicenseStatus } from '../../core/services/license.servi
       width: 100%; padding: 10px 16px; border: none; background: none;
       display: flex; align-items: center; gap: 12px; color: var(--text-dark);
       font-size: 0.9rem; font-weight: 500; cursor: pointer; text-align: left;
-      transition: all 0.2s;
+      transition: all 0.2s; white-space: nowrap;
     }
     .menu-item:hover { background: var(--bg-surface); color: var(--primary); }
     .menu-item .material-symbols-outlined { font-size: 20px; color: var(--text-light); transition: color 0.2s; }
